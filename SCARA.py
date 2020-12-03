@@ -1,9 +1,20 @@
 import numpy as np
 import sympy as sp
-from sympy import sin, cos, nsimplify
+import math
+from sympy import sin, cos, acos, nsimplify, pprint
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from tabulate import tabulate
+from sympy import init_printing
+# init_printing()
+
+def cpprint(string, matrix):
+    print(string)
+    # for pos in matrix:
+    #     if pos<1e-10:
+    #         pos = 0
+    #     pos = round(pos,10)
+    pprint(matrix.evalf(10), use_unicode=False)
 
 # Symbolic
 a10, a11, a12, a13, a14, a15, a1, a2, a3, a4, a5, a6 = sp.symbols('a10 a11 a12 a13 a14 a15 a1 a2 a3 a4 a5 a6')
@@ -25,6 +36,115 @@ a1_v = sp.Matrix([a10, a11, a12, a13, a14, a15])
 a_v = sp.Matrix([a1, a2, a3, a4, a5, a6])
 th_v = sp.Matrix([th1, th2, th3, th4, th5, th6])
 d_v = sp.Matrix([d1, d2, d3, d4, d5, d6])
+
+g = 9.81
+# Numeric data from SCARA
+# Length of the links
+_L1_ = 0.75 # in meters
+_L2_ = 0.40 # in meters
+_L3_ = 0.40 # in meters
+_a1_ = 0.15 # in meters
+# L5 = # in meters
+_a2_ = 0.40 # in meters
+
+# Inverse kinematics
+x = float(input('Coordenada x (en cm): '))
+y = float(input('Coordenada y (en cm): '))
+z = float(input('Coordenada z (en cm): '))
+x/=100
+y/=100
+z/=100
+Px = L2*cos(th1) + L3*cos(th1+th2)
+Py = L2*sin(th1) + L3*sin(th1+th2)
+Pz = L1+a1-d3-a2
+print('Px =', Px)
+print('Py =', Py)
+print('Pz =', Pz)
+
+q = (x**2 + y**2)**(1/2)
+print('q = (x^2 + y^2)^(1/2) = ', q)
+beta = acos((L2**2 + L3**2 - q**2)/(2*L2*L3))
+beta_solr = beta.subs({L2: _L2_, L3: _L3_})
+beta_sold = beta_solr*180/np.pi
+print(f'{chr(946)} = arc cos[(L2^2 + L3^2 - q^2)/(2*L2*L3)] = ', beta, '=', beta_sold)
+theta2r = np.pi - beta_solr
+theta2d = theta2r*180/np.pi
+print(f'{chr(952)}2 = 180° - {chr(946)} = ', theta2d)
+alpha = acos((q**2 + L2**2 - L3**2 )/(2*L2*q))
+alpha_solr = alpha.subs({L2: _L2_, L3: _L3_})
+alpha_sold = alpha_solr*180/np.pi
+print(f'{chr(945)} = arc tan[(q^2 + L2^2 - L3^2 )/(2*L2*q)] = ', alpha, '=', alpha_sold)
+thetaqr = math.atan2(y,x)
+thetaqd = thetaqr*180/np.pi
+print(f'{chr(952)}q = arc tan(y/x) = ', thetaqd)
+theta1r = thetaqr - alpha_solr
+theta1d = theta1r*180/np.pi
+print(f'{chr(952)}1 = {chr(952)}q - {chr(945)} = ', theta1d)
+d3_ = L1+a1-a2-z
+d3_sol = d3_.subs({L1: _L1_, a1: _a1_, a2: _a2_})
+print('d3 = L1+a1-a2-Pz = ', d3_, '=', d3_sol)
+print()
+invKin = [[theta1r, theta2r, d3_sol*100],[theta1d, theta2d, d3_sol*100]]
+print(tabulate(invKin, headers=[chr(952)+'1', chr(952)+'2', 'd3']))
+print()
+
+# Mass of the links
+# mb = 317.072591 # in kilograms
+m1 = 46.604773 # in kilograms
+m2 = 0
+m3 = 74.295959 # in kilograms
+m4 = 0
+m5 = 16.618563 # in kilogramos
+m6 = 0
+# Link1
+Lc1x, Lc1y, Lc1z = 0.200000, 0, 0 # from solidworks
+Ixx1, Iyy1, Izz1 = 0.282807, 1.375603, 1.353315 # from solidworks
+Ic1 = sp.Matrix([
+                [Ixx1,0,0],
+                [0,Iyy1,0],
+                [0,0,Izz1]])
+# Link2
+Lc2x, Lc2y, Lc2z = -0.200000, 0, 0 # from solidworks
+Ixx2, Iyy2, Izz2 = 0.282807, 1.375603, 1.353315 # from solidworks
+Ic2 = sp.Matrix([
+                [Ixx2,0,0],
+                [0,Iyy2,0],
+                [0,0,Izz2]])
+# Link3
+Lc3x, Lc3y, Lc3z = 0.157849, 0, 0.001766 # from solidworks
+Ixx3, Iyy3, Izz3 = 0.617768, 3.788118, 3.705766 # from solidworks
+Ic3 = sp.Matrix([
+                [Ixx3,0,0],
+                [0,Iyy3,0],
+                [0,0,Izz3]])
+# Link4
+Lc4x, Lc4y, Lc4z = -0.242151, 0, -0.001766 # from solidworks
+Ixx4, Iyy4, Izz4 = 0.617768, 3.788118, 3.705766 # from solidworks
+Ic4 = sp.Matrix([
+                [Ixx4,0,0],
+                [0,Iyy4,0],
+                [0,0,Izz4]])
+# Link5
+Lc5x, Lc5y, Lc5z = 0.000017, -0.000095, -0.035844 # from solidworks
+Ixx5, Iyy5, Izz5 = 1.208600, 1.208659, 0.012573 # from solidworks
+Ic5 = sp.Matrix([
+                [Ixx5,0,0],
+                [0,Iyy5,0],
+                [0,0,Izz5]])
+# Link6
+Lc6x, Lc6y, Lc6z = 0.000015, 0.000086, 0.436514 # from solidworks
+Ixx6, Iyy6, Izz6 = 1.208600, 1.208659, 0.012573 # from solidworks
+Ic6 = sp.Matrix([
+                [Ixx6,0,0],
+                [0,Iyy6,0],
+                [0,0,Izz6]])
+# Center of mass of the links
+P1c1 = sp.Matrix([Lc1x,Lc1y,Lc1z])
+P2c2 = sp.Matrix([Lc2x,Lc2y,Lc2z])
+P3c3 = sp.Matrix([Lc3x,Lc3y,Lc3z])
+P4c4 = sp.Matrix([Lc4x,Lc4y,Lc4z])
+P5c5 = sp.Matrix([Lc5x,Lc5y,Lc5z])
+P6c6 = sp.Matrix([Lc6x,Lc6y,Lc6z])
 
 # # Example
 # data = [
@@ -165,38 +285,45 @@ d_v = sp.Matrix([d1, d2, d3, d4, d5, d6])
 # SCARA
 data = [
     [1, 0, 0, 'L1', chr(952) + '1'],
-    [2, 0, 'L2', 0, chr(952) + '2'],
-    [3, 0, 0, 'a1', 0],
-    [4, np.pi, 'L3', 0, 0],
+    [2, 0, 'L2', 0, 0],
+    [3, 0, 0, 'a1', chr(952) + '2'],
+    [4, chr(960), 'L3', 0, 0],
     [5, 0, 0, 'd3', 0],
     [6, 0, 0, 'a2', 0]
 ]
 data2 = [
     [1, 0, 0, L1, th1],
-    [2, 0, L2, 0, th2],
-    [3, 0, 0, a1, 0],
+    [2, 0, L2, 0, 0],
+    [3, 0, 0, a1, th2],
     [4, np.pi, L3, 0, 0],
     [5, 0, 0, d3, 0],
     [6, 0, 0, a2, 0]
 ]
+# data3 = [
+#     [1, 0, 0, 75, 45 * np.pi / 180],
+#     [2, 0, 40, 0, 0],
+#     [3, 0, 0, 15, -70 * np.pi / 180],
+#     [4, np.pi, 40, 0, 0],
+#     [5, 0, 0, 30, 0],
+#     [6, 0, 0, 40, 0]
+# ]
 data3 = [
-    [1, 0, 0, 75, 95 * np.pi / 180],
-    [2, 0, 40, 0, -70 * np.pi / 180],
-    [3, 0, 0, 15, 0],
+    [1, 0, 0, 75, invKin[0][0]],
+    [2, 0, 40, 0, 0],
+    [3, 0, 0, 15, invKin[0][1]],
     [4, np.pi, 40, 0, 0],
-    [5, 0, 0, 30, 0],
+    [5, 0, 0, invKin[0][2], 0],
     [6, 0, 0, 40, 0]
 ]
 xmin=-50
 xmax=50
-ymin=-10
+ymin=-50
 ymax=60
 zmin=-2
 zmax=102
 
 print(tabulate(data, headers=['Link', chr(
     945) + 'i-1', 'ai-1', 'di', chr(952) + 'i']))
-print()
 
 # Symbolic
 a1_s = a1_v.subs([(a10, data[0][1]), (a11, data[1][1]), (a12, data[2][1]), (a13, data[3][1]), (a14, data[4][1]), (a15, data[5][1])])
@@ -261,10 +388,36 @@ print()
 print('Matrices:')
 print('Denavit-Hartenberg symbolic matrices')
 print(T_o)
-print('\nSubstituting symbolic values')
+print('\nSubstituting values from the table on the D-H matrices')
 print(T_s)
-print('\nSymbolic and substitution')
+print('\nSubstituting python symbolic variables on the table')
+print(tabulate(data2, headers=['Link', chr(
+    945) + 'i-1', 'ai-1', 'di', chr(952) + 'i']))
+print()
+th_d = [th1,th2,th3,th4,th5,th6,d1,d2,d3,d4,d5,d6]
+dof = []
+for i in th_d:
+    for j in th_ns:
+        if i==j:
+            dof.append(i)
+    for j in d_ns:
+        if i==j:
+            dof.append(i)
+print('Degrees of freedom of the system: ',dof)
+print('\nSubstituting python symbolic variables on the matrices')
+# for i in range(len(T_ns)):
+#     pprint(T_ns[i],use_unicode=False)
 print(T_ns)
+
+print(f"\nT01, T12, T23, T34, T45, T56")
+
+a = 0
+b = 1
+for mat in T_ns:
+    print('T' + str(a) + str(b))
+    print(mat, '\n')
+    a += 1
+    b += 1
 
 T01_ns = T_ns[0]
 T02_ns = T01_ns * T_ns[1]
@@ -272,60 +425,79 @@ T03_ns = T02_ns * T_ns[2]
 T04_ns = T03_ns * T_ns[3]
 T05_ns = T04_ns * T_ns[4]
 T06_ns = T05_ns * T_ns[5]
-print(f"Substituting in T01, T02, T03, T04, T05, T06")
-print('T01\n', nsimplify(T01_ns, tolerance=1e-10, rational=True))
-print('T02\n', nsimplify(T02_ns, tolerance=1e-10, rational=True))
-print('T03\n', nsimplify(T03_ns, tolerance=1e-10, rational=True))
-print('T04\n', nsimplify(T04_ns, tolerance=1e-10, rational=True))
-print('T05\n', nsimplify(T05_ns, tolerance=1e-10, rational=True))
-print('Final position of the end effector with respect to {0}')
+print('Multiplications')
+a = 1
+b = 2
+T_ns_final_from_0 = [T01_ns,T02_ns,T03_ns,T04_ns,T05_ns,T06_ns]
+print('\nT01\n', nsimplify(T01_ns, tolerance=1e-10, rational=True))
+for i in range(len(T_ns_final_from_0)):
+    if i == 0:
+        continue
+    print(f'\nT0{b} = T0{a}*T{a}{b}\nT0{b}\n', nsimplify(T_ns_final_from_0[i], tolerance=1e-10, rational=True))
+    a += 1
+    b += 1
+# print('T02\n', nsimplify(T02_ns, tolerance=1e-10, rational=True))
+# print('T03\n', nsimplify(T03_ns, tolerance=1e-10, rational=True))
+# print('T04\n', nsimplify(T04_ns, tolerance=1e-10, rational=True))
+# print('T05\n', nsimplify(T05_ns, tolerance=1e-10, rational=True))
+# print('Final position of the end effector with respect to {0}')
 # for row in nsimplify(T04_ns, tolerance=1e-10, rational=True):
 #     print(sp.factor(row))
 #     print()
 
-print('T06\n', nsimplify(T06_ns, tolerance=1e-10, rational=True))
-print('det(T06)\n', T06_ns.det())
+# print('T06\n', nsimplify(T06_ns, tolerance=1e-10, rational=True))
+print('\ndet(T06)\n', T06_ns.det())
 print('det(T06)\n', sp.factor(T06_ns.det()))
 
 
 print(
-    f"\nNow Substituting all {chr(945)}, a, d and {chr(952)} values in T01, T12, T23, T34, T45, T56")
+    f"\nNow Substituting numeric values from {chr(945)}, a, d and {chr(952)} values in T01, T12, T23, T34, T45, T56")
 
 a = 0
 b = 1
 for mat in T:
-    print('T' + str(a) + str(b))
-    print(mat, '\n')
+    # print('T' + str(a) + str(b))
+    # print(mat, '\n')
+    cpprint('\nT' + str(a) + str(b),mat)
     a += 1
     b += 1
 
-# This is the last translation from a_v = sp.Matrix([a1, a2, a3, a4, a5]), therefore a3
-# P2H = sp.Matrix([[5], [0], [0], [1]])
+# This is the last translation from the table (a or d), therefore d6
+P5H = sp.Matrix([[0], [0], [40], [1]])
 T01 = T[0]
 T02 = T01 * T[1]
 T03 = T02 * T[2]
 T04 = T03 * T[3]
 T05 = T04 * T[4]
 T06 = T05 * T[5]
-# P0H = T02 * P2H
-print('T01\n', T01)
-print('T02\n', T02)
-print('T03\n', T03)
-print('T04\n', T04)
-print('T05\n', T05)
-print('T06\n', T06)
-# print('P0H\n', P0H)  # this must be equals to the last column of T04
+P0H = T05 * P5H
+print('\nMultiplications')
+a = 1
+b = 2
+T_final_from_0 = [T01,T02,T03,T04,T05,T06]
+cpprint('\nT01\n', T01)
+for i in range(len(T_final_from_0)):
+    if i == 0:
+        continue
+    cpprint(f'\nT0{b} = T0{a}*T{a}{b}\nT0{b}', T_final_from_0[i])
+    a += 1
+    b += 1
+# cpprint('\nT03 = T02*T23\n', T03)
+# cpprint('\nT04 = T03*T34\n', T04)
+# cpprint('\nT05 = T04*T45\n', T05)
+# cpprint('\nT06 = T05*T56\n', T06)
+cpprint('\nP0H', P0H)  # this must be equals to the last column of T06
 
 # Define unit vectors
 i0 = sp.Matrix([1, 0, 0, 1])
 j0 = sp.Matrix([0, 1, 0, 1])
 k0 = sp.Matrix([0, 0, 1, 1])
 
-print()
-print('Homogeneous Transformations shape')
-print(T01.shape)
-print('Unit vectors shape')
-print(i0.shape)
+# print()
+# print('Homogeneous Transformations shape')
+# print(T01.shape)
+# print('Unit vectors shape')
+# print(i0.shape)
 
 i01 = T01 * i0
 j01 = T01 * j0
@@ -389,7 +561,7 @@ ax.plot3D(np.linspace(float(T05[0,3]), float(T06[0,3])), np.linspace(float(T05[1
 ax.quiver(T06[0,3], T06[1,3], T06[2,3], size*(i06[0] - T06[0,3]), size*(i06[1] - T06[1,3]), size*(i06[2] - T06[2,3]), color='red', linewidth=3)
 ax.quiver(T06[0,3], T06[1,3], T06[2,3], size*(j06[0] - T06[0,3]), size*(j06[1] - T06[1,3]), size*(j06[2] - T06[2,3]), color='green', linewidth=3)
 ax.quiver(T06[0,3], T06[1,3], T06[2,3], size*(k06[0] - T06[0,3]), size*(k06[1] - T06[1,3]), size*(k06[2] - T06[2,3]), color='blue', linewidth=3)
-ax.set_title('3D Plot')
+ax.set_title('3D Plot SCARA')
 ax.set_xlabel('Eje X_0')
 ax.set_ylabel('Eje Y_0')
 ax.set_zlabel('Eje Z_0')
@@ -405,90 +577,71 @@ z_u = sp.Matrix([0, 0, 1])
 print("\nVelocity")
 # Derivatives
 # Rotational terms
-print(f'{chr(952)}+i')
-print(th_ns[0])
+print(f'column {chr(952)}+i')
+print('i=1 = ',th_ns[0])
 th1p = [th1_p if sp.diff(th_ns[0], th1)!=0 or sp.diff(a1_ns[0], th1)!=0 else 0]
 print('th1p = ',th1p)
-print(th_ns[1])
+print('i=2 = ',th_ns[1])
 th2p = [th2_p if sp.diff(th_ns[1], th2)!=0 or sp.diff(a1_ns[1], th2)!=0 else 0]
 th2p = [th1_p if sp.diff(th_ns[1], th1)!=0 or sp.diff(a1_ns[1], th1)!=0 else th2p[0]]
 print('th2p = ',th2p)
-print(th_ns[2])
+print('i=3 = ',th_ns[2])
 th3p = [th3_p if sp.diff(th_ns[2], th3)!=0 or sp.diff(a1_ns[2], th3)!=0 else 0]
 th3p = [th2_p if sp.diff(th_ns[2], th2)!=0 or sp.diff(a1_ns[2], th2)!=0 else th3p[0]]
 th3p = [th1_p if sp.diff(th_ns[2], th1)!=0 or sp.diff(a1_ns[2], th1)!=0 else th3p[0]]
 print('th3p = ',th3p)
-print(th_ns[3])
+print('i=4 = ',th_ns[3])
 th4p = [th4_p if sp.diff(th_ns[3], th4)!=0 or sp.diff(a1_ns[3], th4)!=0 else 0]
 th4p = [th3_p if sp.diff(th_ns[3], th3)!=0 or sp.diff(a1_ns[3], th3)!=0  else th4p[0]]
 th4p = [th2_p if sp.diff(th_ns[3], th2)!=0 or sp.diff(a1_ns[3], th2)!=0  else th4p[0]]
 print('th4p = ',th4p)
-print(th_ns[4])
+print('i=5 = ',th_ns[4])
 th5p = [th5_p if sp.diff(th_ns[4], th5)!=0 or sp.diff(a1_ns[4], th5)!=0 else 0]
 th5p = [th4_p if sp.diff(th_ns[4], th4)!=0 or sp.diff(a1_ns[4], th4)!=0  else th5p[0]]
 th5p = [th3_p if sp.diff(th_ns[4], th3)!=0 or sp.diff(a1_ns[4], th3)!=0  else th5p[0]]
 print('th5p = ',th5p)
-print(th_ns[5])
+print('i=6 = ',th_ns[5])
 th6p = [th6_p if sp.diff(th_ns[5], th6)!=0 or sp.diff(a1_ns[5], th6)!=0 else 0]
 th6p = [th5_p if sp.diff(th_ns[5], th5)!=0 or sp.diff(a1_ns[5], th5)!=0  else th6p[0]]
 th6p = [th4_p if sp.diff(th_ns[5], th4)!=0 or sp.diff(a1_ns[5], th4)!=0  else th6p[0]]
 print('th6p = ',th6p)
 # Translation terms
-print('di')
-print(d_ns[0])
+print('column di')
+print('i=1 = ',d_ns[0])
 d1p = [d1_p if sp.diff(d_ns[0], d1)!=0 or sp.diff(a_ns[0], d1)!=0 else 0]
 print('d1p = ',d1p)
-print(d_ns[1])
+print('i=2 = ',d_ns[1])
 d2p = [d2_p if sp.diff(d_ns[1], d2)!=0 or sp.diff(a_ns[1], d2)!=0 else 0]
 d2p = [d1_p if sp.diff(d_ns[1], d1)!=0 or sp.diff(a_ns[1], d1)!=0 else d2p[0]]
 print('d2p = ',d2p)
-print(d_ns[2])
+print('i=3 = ',d_ns[2])
 d3p = [d3_p if sp.diff(d_ns[2], d3)!=0 or sp.diff(a_ns[2], d3)!=0 else 0]
 d3p = [d2_p if sp.diff(d_ns[2], d2)!=0 or sp.diff(a_ns[2], d2)!=0 else d3p[0]]
 d3p = [d1_p if sp.diff(d_ns[2], d1)!=0 or sp.diff(a_ns[2], d1)!=0 else d3p[0]]
 print('d3p = ',d3p)
-print(d_ns[3])
+print('i=4 = ',d_ns[3])
 d4p = [d4_p if sp.diff(d_ns[3], d4)!=0 or sp.diff(a_ns[3], d4)!=0 else 0]
 d4p = [d3_p if sp.diff(d_ns[3], d3)!=0 or sp.diff(a_ns[3], d3)!=0 else d4p[0]]
 d4p = [d2_p if sp.diff(d_ns[3], d2)!=0 or sp.diff(a_ns[3], d2)!=0 else d4p[0]]
 print('d4p = ',d4p)
-print(d_ns[4])
+print('i=5 = ',d_ns[4])
 d5p = [d5_p if sp.diff(d_ns[4], d5)!=0 or sp.diff(a_ns[4], d5)!=0 else 0]
 d5p = [d4_p if sp.diff(d_ns[4], d4)!=0 or sp.diff(a_ns[4], d4)!=0 else d5p[0]]
 d5p = [d3_p if sp.diff(d_ns[4], d3)!=0 or sp.diff(a_ns[4], d3)!=0 else d5p[0]]
 print('d5p = ',d5p)
-print(d_ns[5])
+print('i=6 = ',d_ns[5])
 d6p = [d6_p if sp.diff(d_ns[5], d6)!=0 or sp.diff(a_ns[5], d6)!=0 else 0]
 d6p = [d5_p if sp.diff(d_ns[5], d5)!=0 or sp.diff(a_ns[5], d5)!=0 else d6p[0]]
 d6p = [d4_p if sp.diff(d_ns[5], d4)!=0 or sp.diff(a_ns[5], d4)!=0 else d6p[0]]
 print('d6p = ',d6p)
-th_d = [th1,th2,th3,th4,th5,th6,d1,d2,d3,d4,d5,d6]
-dof = []
-for i in th_d:
-    for j in th_ns:
-        if i==j:
-            dof.append(i)
-    for j in d_ns:
-        if i==j:
-            dof.append(i)
-print(dof)
+
 th_d_p = [th1p,th2p,th3p,th4p,th5p,th6p,d1p,d2p,d3p,d4p,d5p,d6p]
 dof_p = [i[0] for i in th_d_p if i[0]!=0]
-print(dof_p)
+print('\nDerivatives of the degrees of freedom of the system:',dof_p)
 print()
 # Linear & angular initial velocities
 w00 = sp.Matrix([0, 0, 0])
 v00 = sp.Matrix([0, 0, 0])
-
-print(f"\nNow Substituting symbolic values in T01, T12, T23, T34, T45")
-
-a = 0
-b = 1
-for mat in T_ns:
-    print('T' + str(a) + str(b))
-    print(mat, '\n')
-    a += 1
-    b += 1
 
 # Rotationals
 print("Rotational matrices:")
@@ -504,6 +657,7 @@ print('R23: ', R23)
 print('R34: ', R34)
 print('R45: ', R45)
 print('R56: ', R56)
+
 print("Inverse of previous rotational matrices:")
 R10 = R01.T
 R21 = R12.T
@@ -517,9 +671,9 @@ print('R32: ', R32)
 print('R43: ', R43)
 print('R54: ', R54)
 print('R65: ', R65)
-print()
 
-# Points
+# Position vectors
+print('Position Vectors')
 P01 = T_ns[0][:3, 3]
 P12 = T_ns[1][:3, 3]
 P23 = T_ns[2][:3, 3]
@@ -534,7 +688,7 @@ print('P45: ', P45)
 print('P56: ', P56)
 
 # Operations
-print('Operations')
+print('\nOperations\n')
 print(f'w11 = R10*w00 + {chr(952)}1p*Z1_u: ')
 w11 = R10 * w00 + th1p[0] * z_u
 print('w11: ', w11)
@@ -603,62 +757,62 @@ print('v06: ', v06)
 print()
 
 # Acceleration
-print("\nAcceleration")
+print("Acceleration")
 # Derivatives
 # Rotational terms
-print(f'{chr(952)}+i_p')
-print(th_ns[0])
+print(f'column {chr(952)}+i_p')
+print('i=1 = ',th_ns[0])
 th1pp = [th1_pp if sp.diff(th_ns[0], th1)!=0 or sp.diff(a1_ns[0], th1)!=0 else 0]
 print('th1pp = ',th1pp)
-print(th_ns[1])
+print('i=2 = ',th_ns[1])
 th2pp = [th2_pp if sp.diff(th_ns[1], th2)!=0 or sp.diff(a1_ns[1], th2)!=0 else 0]
 th2pp = [th1_pp if sp.diff(th_ns[1], th1)!=0 or sp.diff(a1_ns[1], th1)!=0 else th2pp[0]]
 print('th2pp = ',th2pp)
-print(th_ns[2])
+print('i=3 = ',th_ns[2])
 th3pp = [th3_pp if sp.diff(th_ns[2], th3)!=0 or sp.diff(a1_ns[2], th3)!=0 else 0]
 th3pp = [th2_pp if sp.diff(th_ns[2], th2)!=0 or sp.diff(a1_ns[2], th2)!=0 else th3pp[0]]
 th3pp = [th1_pp if sp.diff(th_ns[2], th1)!=0 or sp.diff(a1_ns[2], th1)!=0 else th3pp[0]]
 print('th3pp = ',th3pp)
-print(th_ns[3])
+print('i=4 = ',th_ns[3])
 th4pp = [th4_pp if sp.diff(th_ns[3], th4)!=0 or sp.diff(a1_ns[3], th4)!=0 else 0]
 th4pp = [th3_pp if sp.diff(th_ns[3], th3)!=0 or sp.diff(a1_ns[3], th3)!=0  else th4pp[0]]
 th4pp = [th2_pp if sp.diff(th_ns[3], th2)!=0 or sp.diff(a1_ns[3], th2)!=0  else th4pp[0]]
 print('th4pp = ',th4pp)
-print(th_ns[4])
+print('i=5 = ',th_ns[4])
 th5pp = [th5_pp if sp.diff(th_ns[4], th5)!=0 or sp.diff(a1_ns[4], th5)!=0 else 0]
 th5pp = [th4_pp if sp.diff(th_ns[4], th4)!=0 or sp.diff(a1_ns[4], th4)!=0  else th5pp[0]]
 th5pp = [th3_pp if sp.diff(th_ns[4], th3)!=0 or sp.diff(a1_ns[4], th3)!=0  else th5pp[0]]
 print('th5pp = ',th5pp)
-print(th_ns[5])
+print('i=6 = ',th_ns[5])
 th6pp = [th6_pp if sp.diff(th_ns[5], th6)!=0 or sp.diff(a1_ns[5], th6)!=0 else 0]
 th6pp = [th5_pp if sp.diff(th_ns[5], th5)!=0 or sp.diff(a1_ns[5], th5)!=0  else th6pp[0]]
 th6pp = [th4_pp if sp.diff(th_ns[5], th4)!=0 or sp.diff(a1_ns[5], th4)!=0  else th6pp[0]]
 print('th6pp = ',th6pp)
 # Translation terms
-print('di_p')
-print(d_ns[0])
+print('column di_p')
+print('i=1 = ',d_ns[0])
 d1pp = [d1_pp if sp.diff(d_ns[0], d1)!=0 or sp.diff(a_ns[0], d1)!=0 else 0]
 print('d1pp = ',d1pp)
-print(d_ns[1])
+print('i=2 = ',d_ns[1])
 d2pp = [d2_pp if sp.diff(d_ns[1], d2)!=0 or sp.diff(a_ns[1], d2)!=0 else 0]
 d2pp = [d1_pp if sp.diff(d_ns[1], d1)!=0 or sp.diff(a_ns[1], d1)!=0 else d2pp[0]]
 print('d2pp = ',d2pp)
-print(d_ns[2])
+print('i=3 = ',d_ns[2])
 d3pp = [d3_pp if sp.diff(d_ns[2], d3)!=0 or sp.diff(a_ns[2], d3)!=0 else 0]
 d3pp = [d2_pp if sp.diff(d_ns[2], d2)!=0 or sp.diff(a_ns[2], d2)!=0 else d3pp[0]]
 d3pp = [d1_pp if sp.diff(d_ns[2], d1)!=0 or sp.diff(a_ns[2], d1)!=0 else d3pp[0]]
 print('d3pp = ',d3pp)
-print(d_ns[3])
+print('i=4 = ',d_ns[3])
 d4pp = [d4_pp if sp.diff(d_ns[3], d4)!=0 or sp.diff(a_ns[3], d4)!=0 else 0]
 d4pp = [d3_pp if sp.diff(d_ns[3], d3)!=0 or sp.diff(a_ns[3], d3)!=0 else d4pp[0]]
 d4pp = [d2_pp if sp.diff(d_ns[4], d2)!=0 or sp.diff(a_ns[4], d2)!=0 else d4pp[0]]
 print('d4pp = ',d4pp)
-print(d_ns[4])
+print('i=5 = ',d_ns[4])
 d5pp = [d5_pp if sp.diff(d_ns[4], d5)!=0 or sp.diff(a_ns[4], d5)!=0 else 0]
 d5pp = [d4_pp if sp.diff(d_ns[4], d4)!=0 or sp.diff(a_ns[4], d4)!=0 else d5pp[0]]
 d5pp = [d3_pp if sp.diff(d_ns[4], d3)!=0 or sp.diff(a_ns[4], d3)!=0 else d5pp[0]]
 print('d5pp = ',d5pp)
-print(d_ns[5])
+print('i=6 = ',d_ns[5])
 d6pp = [d6_pp if sp.diff(d_ns[5], d6)!=0 or sp.diff(a_ns[5], d6)!=0 else 0]
 d6pp = [d5_pp if sp.diff(d_ns[5], d5)!=0 or sp.diff(a_ns[5], d5)!=0 else d6pp[0]]
 d6pp = [d4_pp if sp.diff(d_ns[5], d4)!=0 or sp.diff(a_ns[5], d4)!=0 else d6pp[0]]
@@ -669,7 +823,7 @@ w00p = sp.Matrix([0, 0, 0])
 v00p = sp.Matrix([0, 0, 0])
 
 # Operations
-print('Operations')
+print('\nOperations\n')
 print(f'w11p = R10*w00p + R10*w00 x {chr(952)}1p*Z1_u + {chr(952)}1pp*Z1_u: ')
 w11p = R10 * w00p + (R10 * w00).cross(th1p[0] * z_u) + th1pp[0] * z_u
 print('w11p: ', w11p)
@@ -735,15 +889,15 @@ print()
 
 # Taking gravity in consideration
 print('Acceleration taking gravity in consideration')
-vg = sp.Matrix([0, 0, -g])
+vg = sp.Matrix([0, 0, g])
 print('vp = ', vg)
 # Center of mass
-P1c1 = sp.Matrix([0, 0, Lc1])
-P2c2 = sp.Matrix([Lc2, 0, 0])
-P3c3 = sp.Matrix([0, 0, Lc3])
-P4c4 = sp.Matrix([Lc4, 0, 0])
-P5c5 = sp.Matrix([0, 0, Lc5])
-P6c6 = sp.Matrix([0, 0, Lc6])
+# P1c1 = sp.Matrix([0, 0, Lc1])
+# P2c2 = sp.Matrix([Lc2, 0, 0])
+# P3c3 = sp.Matrix([0, 0, Lc3])
+# P4c4 = sp.Matrix([Lc4, 0, 0])
+# P5c5 = sp.Matrix([0, 0, Lc5])
+# P6c6 = sp.Matrix([0, 0, Lc6])
 print('Center of mass: ', P1c1, P2c2, P3c3, P4c4, P5c5, P6c6)
 
 # Operations
@@ -757,6 +911,7 @@ print('v11p: ', v11p)
 print('vc11p = v11p + w11p x P1c1 + w11 x (w11 x P1c1)')
 vc11p = v11p + w11p.cross(P1c1) + w11.cross(w11.cross(P1c1))
 print('vc11p: ', vc11p)
+# pprint(vc11p, use_unicode=False)
 print()
 
 print(f'w22p = R21*w11p + R21*w11 x {chr(952)}2p*Z2_u + {chr(952)}2pp*Z2_u: ')
@@ -770,6 +925,7 @@ v22p_xyz = sp.Matrix([vel22x_p, vel22y_p, vel22z_p])
 print('vc22p = v22p + w22p x P2c2 + w22 x (w22 x P2c2)')
 vc22p = v22p + w22p.cross(P2c2) + w22.cross(w22.cross(P2c2))
 print('vc22p: ', vc22p)
+# pprint(vc22p, use_unicode=False)
 print()
 
 print(f'w33p = R32*w22p + R32*w22 x {chr(952)}3p*Z3_u + {chr(952)}3pp*Z3_u: ')
@@ -788,6 +944,7 @@ print('vc33p = v33p + w33p x P3c3 + w33 x (w33 x P3c3)')
 vc33p = v33p + w33p.cross(P3c3) + w33.cross(w33.cross(P3c3))
 vc33p_simpl = v33p_xyz + w33p.cross(P3c3) + w33.cross(w33.cross(P3c3))
 print('vc33p: ', vc33p)
+# pprint(vc33p, use_unicode=False)
 print('vc33p_simpl: ', vc33p_simpl)
 print()
 
@@ -807,6 +964,7 @@ print('vc44p = v44p + w44p x P4c4 + w44 x (w44 x P4c4)')
 vc44p = v44p + w44p.cross(P4c4) + w44.cross(w44.cross(P4c4))
 vc44p_simpl = v44p_xyz + w44p_xyz.cross(P4c4) + w44_xyz.cross(w44.cross(P4c4))
 print('vc44p: ', vc44p)
+# pprint(vc44p, use_unicode=False)
 print('vc44p_simpl: ', vc44p_simpl)
 print()
 
@@ -826,6 +984,7 @@ print('vc55p = v55p + w55p x P5c5 + w55 x (w55 x P5c5)')
 vc55p = v55p + w55p.cross(P5c5) + w55.cross(w55.cross(P5c5))
 vc55p_simpl = v55p_xyz + w55p_xyz.cross(P5c5) + w55_xyz.cross(w55.cross(P5c5))
 print('vc55p: ', vc55p)
+# pprint(vc55p, use_unicode=False)
 print('vc55p_simpl: ', vc55p_simpl)
 print()
 
@@ -845,38 +1004,210 @@ print('vc66p = v66p + w66p x P6c6 + w66 x (w66 x P6c6)')
 vc66p = v66p + w66p.cross(P6c6) + w66.cross(w66.cross(P6c6))
 vc66p_simpl = v66p_xyz + w66p_xyz.cross(P6c6) + w66_xyz.cross(w66.cross(P6c6))
 print('vc66p: ', vc66p)
+# pprint(vc66p, use_unicode=False)
 print('vc66p_simpl: ', vc66p_simpl)
 print()
 
+# Force
+print('Force')
+F1 = m1*vc11p
+N1 = Ic1*w11p + w11.cross(Ic1*w11)
+F2 = m2*vc22p
+N2 = Ic2*w22p + w22.cross(Ic2*w22)
+F3 = m3*vc33p
+N3 = Ic3*w33p + w33.cross(Ic3*w33)
+F4 = m4*vc44p
+N4 = Ic4*w44p + w44.cross(Ic4*w44)
+F5 = m5*vc55p
+N5 = Ic5*w55p + w55.cross(Ic5*w55)
+F6 = m6*vc66p
+N6 = Ic6*w66p + w66.cross(Ic6*w66)
+print('F1 = ', F1)
+print('N1 = ', N1)
+print('F2 = ', F2)
+print('N2 = ', N2)
+print('F3 = ', F3)
+print('N3 = ', N3)
+print('F4 = ', F4)
+print('N4 = ', N4)
+print('F5 = ', F5)
+print('N5 = ', N5)
+print('F6 = ', F6)
+print('N6 = ', N6)
+print()
+# Outbound iterations
+f6 = sp.Matrix([[0], [0], [0]])
+n6 = sp.Matrix([[0], [0], [0]])
+f5 = R56*f6+F5
+n5 = N5 + R56*n6 + P5c5.cross(F5) + P56.cross(R56*f6)
+f4 = R45*f5+F4
+n4 = N4 + R45*n5 + P4c4.cross(F4) + P45.cross(R45*f5)
+f3 = R34*f4+F3
+n3 = N3 + R34*n4 + P3c3.cross(F3) + P34.cross(R34*f4)
+f2 = R23*f3+F2
+n2 = N2 + R23*n3 + P2c2.cross(F2) + P23.cross(R23*f3)
+f1 = R12*f2+F1
+n1 = N1 + R12*n2 + P1c1.cross(F1) + P12.cross(R12*f2)
+print('f6 = ', f6)
+print('n6 = ', n6)
+print('f5 = ', f5)
+print('n5 = ', n5)
+print('f4 = ', f4)
+print('n4 = ', n4)
+print('f3 = ', f3)
+print('n3 = ', n3)
+print('f2 = ', f2)
+print('n2 = ', n2)
+print('f1 = ', f1)
+print('n1 = ', n1)
+
+i=0
+time = []
+n1_solz = []
+n3_solz = []
+f5_solz = []
+for t in np.linspace(0, 3, 25):
+    #
+    # Motor 1
+    t10 = 0
+    t1f = 3
+    Pos10 = 0
+    Pos1f = invKin[0][0]
+    Vel10 = 0
+    Vel1f = 0
+    acc10 = 0
+    acc1f = 0
+    # Coefficients
+    coef_a10 = Pos10
+    coef_a11 = Vel10
+    coef_a12 = coef_a10/2
+    coef_a13 = (20*Pos1f-20*Pos10-(8*Vel1f+12*Vel10)*t1f-(3*acc10-acc1f)*t1f**2)/(2*t1f**3)
+    coef_a14 = (30*Pos10-30*Pos1f-(14*Vel1f+16*Vel10)*t1f+(3*acc10-2*acc1f)*t1f**2)/(2*t1f**4)
+    coef_a15 = (12*Pos1f-12*Pos10-(6*Vel1f+6*Vel10)*t1f-(acc10-acc1f)*t1f**2)/(2*t1f**5)
+    # Polynomial equation evaluation
+    th1_res = coef_a10 + coef_a11*t + coef_a12*t**2 + coef_a13*t**3 + coef_a14*t**4 + coef_a15*t**5
+    th1_d_res = coef_a11 + 2*coef_a12*t + 3*coef_a13*t**2 + 4*coef_a14*t**3 + 5*coef_a15*t**4
+    th1_dd_res = 2*coef_a12 + 6*coef_a13*t + 12*coef_a14*t**2 + 20*coef_a15*t**3
+
+    # Motor 2
+    t20 = 0
+    t2f = 3
+    Pos20 = 0
+    Pos2f = invKin[0][1]
+    Vel20 = 0
+    Vel2f = 0
+    acc20 = 0
+    acc2f = 0
+    # Coefficients
+    coef_a20 = Pos20
+    coef_a21 = Vel20
+    coef_a22 = coef_a20/2
+    coef_a23 = (20*Pos2f-20*Pos20-(8*Vel2f+12*Vel20)*t2f-(3*acc20-acc2f)*t2f**2)/(2*t2f**3)
+    coef_a24 = (30*Pos20-30*Pos2f-(14*Vel2f+16*Vel20)*t2f+(3*acc20-2*acc2f)*t2f**2)/(2*t2f**4)
+    coef_a25 = (12*Pos2f-12*Pos20-(6*Vel2f+6*Vel20)*t2f-(acc20-acc2f)*t2f**2)/(2*t2f**5)
+    # Polynomial equation evaluation
+    th2_res = coef_a20 + coef_a21*t + coef_a22*t**2 + coef_a23*t**3 + coef_a24*t**4 + coef_a25*t**5
+    th2_d_res = coef_a21 + 2*coef_a22*t + 3*coef_a23*t**2 + 4*coef_a24*t**3 + 5*coef_a25*t**4
+    th2_dd_res = 2*coef_a22 + 6*coef_a23*t + 12*coef_a24*t**2 + 20*coef_a25*t**3
+
+    # Motor 3
+    t30 = 0
+    t3f = 3
+    Pos30 = 0
+    Pos3f = invKin[0][2]
+    Vel30 = 0
+    Vel3f = 0
+    acc30 = 0
+    acc3f = 0
+    # Coefficients
+    coef_a30 = Pos30
+    coef_a31 = Vel30
+    coef_a32 = coef_a30/2
+    coef_a33 = (20*Pos3f-20*Pos30-(8*Vel3f+12*Vel30)*t3f-(3*acc30-acc3f)*t3f**2)/(2*t3f**3)
+    coef_a34 = (30*Pos30-30*Pos3f-(14*Vel3f+16*Vel30)*t3f+(3*acc30-2*acc3f)*t3f**2)/(2*t3f**4)
+    coef_a35 = (12*Pos3f-12*Pos30-(6*Vel3f+6*Vel30)*t3f-(acc30-acc3f)*t3f**2)/(2*t3f**5)
+    # Polynomial equation evaluation
+    d3_res = coef_a30 + coef_a31*t + coef_a32*t**2 + coef_a33*t**3 + coef_a34*t**4 + coef_a35*t**5
+    d3_d_res = coef_a31 + 2*coef_a32*t + 3*coef_a33*t**2 + 4*coef_a34*t**3 + 5*coef_a35*t**4
+    d3_dd_res = 2*coef_a32 + 6*coef_a33*t + 12*coef_a34*t**2 + 20*coef_a35*t**3
+
+    # Evaluation of outbound iterations
+    # i=i+1
+    n1_sol = n1.subs({th1:th1_res, th1_p: th1_d_res, th1_pp: th1_dd_res, th2:th2_res, th2_p: th2_d_res, th2_pp: th2_dd_res, d3:d3_res, d3_p: d3_d_res, d3_pp: d3_dd_res, L1: 0.75, L2: 0.40, a1: 0.15, L3: 0.40, a2: 0.40})
+    n3_sol = n3.subs({th1:th1_res, th1_p: th1_d_res, th1_pp: th1_dd_res, th2:th2_res, th2_p: th2_d_res, th2_pp: th2_dd_res, d3:d3_res, d3_p: d3_d_res, d3_pp: d3_dd_res, L1: 0.75, L2: 0.40, a1: 0.15, L3: 0.40, a2: 0.40})
+    f5_sol = f5.subs({th1:th1_res, th1_p: th1_d_res, th1_pp: th1_dd_res, th2:th2_res, th2_p: th2_d_res, th2_pp: th2_dd_res, d3:d3_res, d3_p: d3_d_res, d3_pp: d3_dd_res, L1: 0.75, L2: 0.40, a1: 0.15, L3: 0.40, a2: 0.40})
+    n1_solz.append((n1_sol.T)*z_u)
+    n3_solz.append((n3_sol.T)*z_u)
+    f5_solz.append((f5_sol.T)*z_u)
+    # print('\nn1_sol = ', n1_solz)
+    # print('\nn3_sol = ', n3_solz)
+    # print('\nn5_sol = ', n5_solz)
+    time.append(t)
+
+n1_lst = []
+n3_lst = []
+f5_lst = []
+for i in range(len(n1_solz)):
+    n1_lst.append(n1_solz[i][0])
+    n3_lst.append(n3_solz[i][0])
+    f5_lst.append(f5_solz[i][0])
+
+# print(time)
+# print(n1_solz)
+# print(len(time))
+# print(n1_solz[0][0])
+# print(n1_solz[1])
+# print(n1_solz[2])
+# print(len(n1_solz))
+fig2, axs = plt.subplots(3, 1, figsize=(9, 6), sharex=True)
+
+axs[0].plot(time, n1_lst)
+axs[0].set_xlabel('time [s]')
+axs[0].set_ylabel('torque [kg m^2/s^2]')
+axs[0].set_title('Motor Torque 1')
+axs[0].grid(True)
+axs[1].plot(time, n3_lst)
+axs[1].set_xlabel('time [s]')
+axs[1].set_ylabel('torque [kg m^2/s^2]')
+axs[1].set_title('Motor Torque 2')
+axs[1].grid(True)
+axs[2].plot(time, f5_lst)
+axs[2].set_xlabel('time [s]')
+axs[2].set_ylabel('torque [kg m^2/s^2]')
+axs[2].set_title('Motor Force 3')
+axs[2].grid(True)
+plt.tight_layout()
+plt.show()
+
 # Jacobian
 print('\nJacobian')
-F1 = nsimplify(T06_ns[0, 3], tolerance=1e-10, rational=True)
-F2 = nsimplify(T06_ns[1, 3], tolerance=1e-10, rational=True)
-F3 = nsimplify(T06_ns[2, 3], tolerance=1e-10, rational=True)
-print('F1 = ',F1)
+Func1 = nsimplify(T06_ns[0, 3], tolerance=1e-10, rational=True)
+Func2 = nsimplify(T06_ns[1, 3], tolerance=1e-10, rational=True)
+Func3 = nsimplify(T06_ns[2, 3], tolerance=1e-10, rational=True)
+print('Func1 = ',Func1)
 print()
-print('F2 = ',F2)
+print('Func2 = ',Func2)
 print()
-print('F3 = ',F3)
+print('Func3 = ',Func3)
 print()
-dF1dth1 = sp.diff(F1, dof[0])
-dF1dth2 = sp.diff(F1, dof[1])
-dF1dth3 = sp.diff(F1, dof[2])
-dF2dth1 = sp.diff(F2, dof[0])
-dF2dth2 = sp.diff(F2, dof[1])
-dF2dth3 = sp.diff(F2, dof[2])
-dF3dth1 = sp.diff(F3, dof[0])
-dF3dth2 = sp.diff(F3, dof[1])
-dF3dth3 = sp.diff(F3, dof[2])
-print('Partial derivates of F1')
+dF1dth1 = sp.diff(Func1, dof[0])
+dF1dth2 = sp.diff(Func1, dof[1])
+dF1dth3 = sp.diff(Func1, dof[2])
+dF2dth1 = sp.diff(Func2, dof[0])
+dF2dth2 = sp.diff(Func2, dof[1])
+dF2dth3 = sp.diff(Func2, dof[2])
+dF3dth1 = sp.diff(Func3, dof[0])
+dF3dth2 = sp.diff(Func3, dof[1])
+dF3dth3 = sp.diff(Func3, dof[2])
+print('Partial derivates of Func1')
 print(dF1dth1)
 print(dF1dth2)
 print(dF1dth3)
-print('\nPartial derivates of F2')
+print('\nPartial derivates of Func2')
 print(dF2dth1)
 print(dF2dth2)
 print(dF2dth3)
-print('\nPartial derivates of F3')
+print('\nPartial derivates of Func3')
 print(dF3dth1)
 print(dF3dth2)
 print(dF3dth3)
@@ -886,25 +1217,26 @@ J0 = sp.Matrix([
                 [dF2dth1,dF2dth2,dF2dth3],
                 [dF3dth1,dF3dth2,dF3dth3]
                 ])
-print(J0)
+print('J0\n',J0)
+# pprint(J0, use_unicode=False)
 
-print('\nSecond way to calculate Jacobian')
-F1 = nsimplify(v66[0], tolerance=1e-10, rational=True)
-F2 = nsimplify(v66[1], tolerance=1e-10, rational=True)
-F3 = nsimplify(v66[2], tolerance=1e-10, rational=True)
-print('F1 = ',sp.expand(F1))
+print('\nSecond way to calculate Jacobian from v66')
+Func1 = nsimplify(v66[0], tolerance=1e-10, rational=True)
+Func2 = nsimplify(v66[1], tolerance=1e-10, rational=True)
+Func3 = nsimplify(v66[2], tolerance=1e-10, rational=True)
+print('Func1 = ',sp.expand(Func1))
 print()
-print('F2 = ',sp.expand(F2))
+print('Func2 = ',sp.expand(Func2))
 print()
-print('F3 = ',sp.expand(F3))
+print('Func3 = ',sp.expand(Func3))
 print()
 
-# 1
-J4 = sp.Matrix([
-                [0,L3*sin(th3),0],
-                [0,L3*cos(th3) + L4, L4],
-                [-L3*cos(th2) - L4*cos(th2+th3),0,0]
-                ])
+# # 1
+# J4 = sp.Matrix([
+#                 [0,L3*sin(th3),0],
+#                 [0,L3*cos(th3) + L4, L4],
+#                 [-L3*cos(th2) - L4*cos(th2+th3),0,0]
+#                 ])
 
 # # 2
 # J4 = sp.Matrix([
@@ -934,7 +1266,7 @@ J6 = sp.Matrix([
                 [0,0,1]
                 ])
 
-print(J6)
+print('J6\n',J6)
 print()
 R06 = nsimplify(T06_ns[:3, :3], tolerance=1e-10, rational=True)
 print("To calculate Jacobian seen from 0 we need to multiply by corresponding rotational matrix")
