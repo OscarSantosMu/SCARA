@@ -8,12 +8,12 @@ import matplotlib.animation as animation
 from tabulate import tabulate
 from matplotlib.widgets import TextBox
 
-Writer = animation.writers['ffmpeg']
-writer = Writer(fps = 4, metadata=dict(artist='OscarSantos98'), bitrate=1800)
+# Writer = animation.writers['ffmpeg']
+# writer = Writer(fps = 4, metadata=dict(artist='OscarSantos98'), bitrate=1800)
 
 # Symbolic
-a10, a11, a12, a13, a14, a15, a1, a2, a3, a4, a5, a6 = sp.symbols(
-    'a10 a11 a12 a13 a14 a15 a1 a2 a3 a4 a5 a6')
+alp0, alp1, alp2, alp3, alp4, alp5, a1, a2, a3, a4, a5, a6 = sp.symbols(
+    'alp0 alplp alp2 alp3 alp4 alp5 a1 a2 a3 a4 a5 a6')
 th1, th2, th3, th4, th5, th6, d1, d2, d3, d4, d5, d6 = sp.symbols(
     'th1 th2 th3 th4 th5 th6 d1 d2 d3 d4 d5 d6')
 L1, L2, L3, L4 = sp.symbols('L1 L2 L3 L4')
@@ -70,7 +70,7 @@ print()
 relationj = theta2d/theta1d
 relationk = theta2d/(d3_sol*100)
 
-a1_v = sp.Matrix([a10, a11, a12, a13, a14, a15])
+alp_v = sp.Matrix([alp0, alp1, alp2, alp3, alp4, alp5])
 a_v = sp.Matrix([a1, a2, a3, a4, a5, a6])
 th_v = sp.Matrix([th1, th2, th3, th4, th5, th6])
 d_v = sp.Matrix([d1, d2, d3, d4, d5, d6])
@@ -105,63 +105,23 @@ ax.set_xlim(xmin, xmax)
 ax.set_ylim(ymin, ymax)
 ax.set_zlim(zmin, zmax)
 
-# # line, = ax.plot(0, 0)
-
-# # [1]
-# # line.plot3D(np.linspace(float(0), float(T01[0, 3])), np.linspace(float(0), float(T01[1, 3])), np.linspace(float(0), float(T01[2, 3])))
-
 def animation_frame(i):
+
     j = i/relationj
     k = i/relationk
     print(f'\n{chr(952)}1 = ',j)
     print(f'{chr(952)}2 = ',i)
     print('d3 = ',k)
-    # print(i)
-    # print(animation_frame.line_1)
-    # print(animation_frame.line_11)
-    # print(animation_frame.line_1[0])
-    # print(animation_frame.line_2[0])
-    # print(animation_frame.line_3[0])
-    # print(animation_frame.line_4[0])
-    # print(animation_frame.line_5[0])
-    # print(animation_frame.line_6[0])
-    animation_frame.line_1.pop(0).remove()
-    animation_frame.line_11.remove()
-    animation_frame.line_12.remove()
-    animation_frame.line_13.remove()
-    animation_frame.line_2.pop(0).remove()
-    animation_frame.line_21.remove()
-    animation_frame.line_22.remove()
-    animation_frame.line_23.remove()
-    animation_frame.line_3.pop(0).remove()
-    animation_frame.line_31.remove()
-    animation_frame.line_32.remove()
-    animation_frame.line_33.remove()
-    animation_frame.line_4.pop(0).remove()
-    animation_frame.line_41.remove()
-    animation_frame.line_42.remove()
-    animation_frame.line_43.remove()
-    animation_frame.line_5.pop(0).remove()
-    animation_frame.line_51.remove()
-    animation_frame.line_52.remove()
-    animation_frame.line_53.remove()
-    animation_frame.line_6.pop(0).remove()
-    animation_frame.line_61.remove()
-    animation_frame.line_62.remove()
-    animation_frame.line_63.remove()
-    # line1 = animation_frame.line_1.pop(0)
-    # line2 = animation_frame.line_2.pop(0)
-    # line3 = animation_frame.line_3.pop(0)
-    # line4 = animation_frame.line_4.pop(0)
-    # line5 = animation_frame.line_5.pop(0)
-    # line6 = animation_frame.line_6.pop(0)
-    # line1.remove()
-    # line2.remove()
-    # line3.remove()
-    # line4.remove()
-    # line5.remove()
-    # line6.remove()
+    ax.cla()
 
+    # data3 = [
+    # [1, 0, 0, _L1_, invKin[0][0]],
+    # [2, 0, _L2_, 0, 0],
+    # [3, 0, 0, _a1_, invKin[0][1]],
+    # [4, np.pi, _L3_, 0, 0],
+    # [5, 0, 0, invKin[0][2], 0],
+    # [6, 0, 0, _a2_, 0]
+    # ]
     data3 = [
         [1, 0, 0, 75, j * np.pi / 180],
         [2, 0, 40, 0, 0],
@@ -170,9 +130,10 @@ def animation_frame(i):
         [5, 0, 0, k, 0],
         [6, 0, 0, 40, 0]
     ]
+
     # Numeric for the plot
-    a1_n = a1_v.subs([(a10, data3[0][1]), (a11, data3[1][1]), (a12, data3[2][1]),
-                      (a13, data3[3][1]), (a14, data3[4][1]), (a15, data3[5][1])])
+    alp_n = alp_v.subs([(alp0, data3[0][1]), (alp1, data3[1][1]), (alp2, data3[2][1]),
+                      (alp3, data3[3][1]), (alp4, data3[4][1]), (alp5, data3[5][1])])
     a_n = a_v.subs([(a1, data3[0][2]), (a2, data3[1][2]), (a3, data3[2][2]),
                     (a4, data3[3][2]), (a5, data3[4][2]), (a6, data3[5][2])])
     d_n = d_v.subs([(d1, data3[0][3]), (d2, data3[1][3]), (d3, data3[2][3]),
@@ -184,10 +145,10 @@ def animation_frame(i):
     for i in range(6):
         T.append(sp.Matrix([
             [cos(th_n[i]), -sin(th_n[i]), 0, a_n[i]],
-            [sin(th_n[i]) * cos(a1_n[i]), cos(th_n[i]) *
-             cos(a1_n[i]), -sin(a1_n[i]), -sin(a1_n[i]) * d_n[i]],
-            [sin(th_n[i]) * sin(a1_n[i]), cos(th_n[i]) *
-             sin(a1_n[i]), cos(a1_n[i]), cos(a1_n[i]) * d_n[i]],
+            [sin(th_n[i]) * cos(alp_n[i]), cos(th_n[i]) *
+             cos(alp_n[i]), -sin(alp_n[i]), -sin(alp_n[i]) * d_n[i]],
+            [sin(th_n[i]) * sin(alp_n[i]), cos(th_n[i]) *
+             sin(alp_n[i]), cos(alp_n[i]), cos(alp_n[i]) * d_n[i]],
             [0, 0, 0, 1],
         ])
         )
@@ -221,6 +182,15 @@ def animation_frame(i):
     i06 = T06 * i0
     j06 = T06 * j0
     k06 = T06 * k0
+
+    # [0]
+    ax.quiver(0, 0, 0, size * (i0[0]), size * (i0[1]),
+          size * (i0[2]), color='red', linewidth=3)
+    ax.quiver(0, 0, 0, size * (j0[0]), size * (j0[1]),
+              size * (j0[2]), color='green', linewidth=3)
+    ax.quiver(0, 0, 0, size * (k0[0]), size * (k0[1]),
+          size * (k0[2]), color='blue', linewidth=3)
+
     # [1]
     animation_frame.line_1 = ax.plot3D(np.linspace(float(0), float(T01[0, 3])), np.linspace(float(0), float(T01[1, 3])), np.linspace(float(0), float(T01[2, 3])), color='tab:gray', linewidth=3)
     animation_frame.line_11 = ax.quiver(T01[0,3], T01[1,3], T01[2,3], size*(i01[0] - T01[0,3]), size*(i01[1] - T01[1,3]), size*(i01[2] - T01[2,3]), color='red', linewidth=3)
@@ -251,38 +221,12 @@ def animation_frame(i):
     animation_frame.line_61 = ax.quiver(T06[0,3], T06[1,3], T06[2,3], size*(i06[0] - T06[0,3]), size*(i06[1] - T06[1,3]), size*(i06[2] - T06[2,3]), color='red', linewidth=3)
     animation_frame.line_62 = ax.quiver(T06[0,3], T06[1,3], T06[2,3], size*(j06[0] - T06[0,3]), size*(j06[1] - T06[1,3]), size*(j06[2] - T06[2,3]), color='green', linewidth=3)
     animation_frame.line_63 = ax.quiver(T06[0,3], T06[1,3], T06[2,3], size*(k06[0] - T06[0,3]), size*(k06[1] - T06[1,3]), size*(k06[2] - T06[2,3]), color='blue', linewidth=3)
+    
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_zlim(zmin, zmax)
     return animation_frame.line_1,
 
-# [1]
-animation_frame.line_1 = ax.plot3D(np.linspace(float(0), float(0)), np.linspace(float(0), float(0)), np.linspace(float(0), float(0)))
-animation_frame.line_11 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_12 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_13 = ax.quiver(0, 0, 0, 0, 0, 0)
-# [2]
-animation_frame.line_2 = ax.plot3D(np.linspace(float(0), float(0)), np.linspace(float(0), float(0)), np.linspace(float(0), float(0)))
-animation_frame.line_21 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_22 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_23 = ax.quiver(0, 0, 0, 0, 0, 0)
-# [3]
-animation_frame.line_3 = ax.plot3D(np.linspace(float(0), float(0)), np.linspace(float(0), float(0)), np.linspace(float(0), float(0)))
-animation_frame.line_31 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_32 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_33 = ax.quiver(0, 0, 0, 0, 0, 0)
-# [4]
-animation_frame.line_4 = ax.plot3D(np.linspace(float(0), float(0)), np.linspace(float(0), float(0)), np.linspace(float(0), float(0)))
-animation_frame.line_41 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_42 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_43 = ax.quiver(0, 0, 0, 0, 0, 0)
-# [5]
-animation_frame.line_5 = ax.plot3D(np.linspace(float(0), float(0)), np.linspace(float(0), float(0)), np.linspace(float(0), float(0)))
-animation_frame.line_51 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_52 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_53 = ax.quiver(0, 0, 0, 0, 0, 0)
-# [6]
-animation_frame.line_6 = ax.plot3D(np.linspace(float(0), float(0)), np.linspace(float(0), float(0)), np.linspace(float(0), float(0)))
-animation_frame.line_61 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_62 = ax.quiver(0, 0, 0, 0, 0, 0)
-animation_frame.line_63 = ax.quiver(0, 0, 0, 0, 0, 0)
 
 animation = animation.FuncAnimation(fig, func=animation_frame,
                           frames=np.arange(0, theta2d+theta2d/100, theta2d/10), interval=250, blit=False, repeat=False)
@@ -311,5 +255,5 @@ axbox = plt.axes([0.3, 0.05, 0.45, 0.075])
 text_box = TextBox(axbox, 'Evaluation', initial=initial_text)
 text_box.on_submit(submit)
 
-animation.save('Movement.mp4', writer=writer)
-# plt.show()
+# animation.save('Movement.mp4', writer=writer)
+plt.show()
