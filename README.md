@@ -14,11 +14,18 @@ Clone the repo
 
 ## Usage example
 
+Run SCARA.py if you want to calculate symbolic and numeric expressions which provide motor torques and forces according to the type of Robot, in this case SCARA which is classified as RRP for Body-and-Arm notation and VRO for Joint Notation, thereby, 2 torques and 1 force.
 
+Run animation.py if you are wondering how does the motion would look like.
+*Note: inverse kinematics could have multiple solutions depending on the type of robot. In this code only one solution is used to calculate values to reach specified coordinates.*
 
 ## Development setup
 
-
+Packages
+- Numpy
+- Sympy
+- Matplotlib
+- Tabulate
 
 ## Release History
 
